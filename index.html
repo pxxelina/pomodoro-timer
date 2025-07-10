@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Pomodoro Timer</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+        :root {
+          --primary-pink: #f8bbd9;
+          --soft-pink: #fce4ec;
+          --warm-brown: #8d6e63;
+          --light-brown: #bcaaa4;
+          --gold: #d4af37;
+          --gold-light: #f4e4a6;
+          --white: #ffffff;
+          --text-dark: #3e2723;
+          --text-light: #6d4c41;
+          --shadow-soft: 0 2px 10px rgba(212, 175, 55, 0.1);
+          --shadow-hover: 0 4px 15px rgba(212, 175, 55, 0.15);
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: "Poppins", sans-serif;
+          background: var(--white);
+          min-height: 100vh;
+          color: var(--text-dark);
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        /* Gold Corner Decorations */
+        .corner-decoration {
+          position: fixed;
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(45deg, var(--gold), var(--gold-light));
+          z-index: -1;
+          opacity: 0.15;
+        }
+
+        .corner-top-left {
+          top: 0;
+          left: 0;
+          border-radius: 0 0 100% 0;
+        }
+
+        .corner-top-right {
+          top: 0;
+          right: 0;
+          border-radius: 0 0 0 100%;
+        }
+
+        .corner-bottom-left {
+          bottom: 0;
+          left: 0;
+          border-radius: 0 100% 0 0;
+        }
+
+        .corner-bottom-right {
+          bottom: 0;
+          right: 0;
+          border-radius: 100% 0 0 0;
+        }
+
+        /* Theme Selector */
+        .theme-selector {
+          position: fixed;
+          top: 20px;
+          left: 20px;
+          display: flex;
+          gap: 8px;
+          z-index: 1000;
+        }
+
+        .theme-btn {
+          width: 28px;
+          height: 28px;
+          border: 1px solid var(--gold);
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          position: relative;
+          background: var(--white);
+        }
+
+        .theme-btn::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          transition: all 0.3s ease;
+        }
+
+        .theme-btn[data-theme="pink"]::before {
+          background: var(--primary-pink);
+        }
+
+        .theme-btn[data-theme="brown"]::before {
+          background: var(--warm-brown);
+        }
+
+        .theme-btn[data-theme="gold"]::before {
+          background: var(--gold);
+        }
+
+        .theme-btn:hover,
+        .theme-btn.active {
+          transform: scale(1.1);
+          box-shadow: var(--shadow-soft);
+        }
+
+        /* Container */
+        .container {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 40px 20px;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* Header */
+        .header {
+          text-align: center;
+          margin-bottom: 50px;
+        }
+
+        .title {
+          font-size: 2.2rem;
+          font-weight: 700;
+          color: var(--text-dark);
+          margin-bottom: 8px;
+          position: relative;
+        }
+
+        .title::before {
+          content: "●";
+          color: var(--primary-pink);
+          margin-right: 10px;
+          font-size: 0.8em;
+        }
+
+        .title::after {
+          content: "●";
+          color: var(--primary-pink);
+          margin-left: 10px;
+          font-size: 0.8em;
+        }
+
+        .subtitle {
+          font-size: 1rem;
+          color: var(--text-light);
+          font-weight: 500;
+        }
+
+        /* Main Grid Layout */
+        .main-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 50px;
+          margin-bottom: 40px;
+        }
+
+        /* Timer Section */
+        .timer-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+
+        /* Circular Timer */
+        .timer-circle {
+          position: relative;
+          width: 280px;
+          height: 280px;
+          margin-bottom: 30px;
+        }
+
+        .timer-svg {
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+        }
+
+        .timer-bg {
+          fill: none;
+          stroke: var(--soft-pink);
+          stroke-width: 6;
+        }
+
+        .timer-progress {
+          fill: none;
+          stroke: var(--gold);
+          stroke-width: 6;
+          stroke-linecap: round;
+          stroke-dasharray: 785;
+          stroke-dashoffset: 785;
+          transition: stroke-dashoffset 1s ease;
+        }
+
+        .timer-content {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          text-align: center;
+        }
+
+        .time {
+          font-size: 3.5rem;
+          font-weight: 700;
+          margin-bottom: 8px;
+          font-variant-numeric: tabular-nums;
+          color: var(--text-dark);
+        }
+
+        .session-info {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--text-light);
+        }
+
+        .timer-circle.active .timer-progress {
+          stroke: var(--primary-pink);
+        }
+
+        .timer-circle.break-mode .timer-progress {
+          stroke: var(--warm-brown);
+        }
+
+        .controls {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        /* Clean Buttons */
+        .btn {
+          padding: 8px 20px;
+          border: 1px solid var(--gold);
+          border-radius: 15px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: inherit;
+          background: var(--white);
+          color: var(--text-dark);
+          min-width: 80px;
+        }
+
+        .btn:hover {
+          background: var(--gold-light);
+          transform: translateY(-1px);
+        }
+
+        .btn.active {
+          background: var(--gold);
+          color: var(--white);
+        }
+
+        /* Stats Section */
+        .stats-section {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
+        .section-title {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: var(--text-dark);
+          margin-bottom: 25px;
+          text-align: center;
+          position: relative;
+        }
+
+        .section-title::before {
+          content: "◆";
+          color: var(--gold);
+          margin-right: 8px;
+          font-size: 0.8em;
+        }
+
+        .stats {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .stat-card {
+          background: var(--white);
+          border: 1px solid var(--soft-pink);
+          padding: 25px;
+          border-radius: 16px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          text-align: center;
+          position: relative;
+        }
+
+        .stat-card::before {
+          content: "";
+          position: absolute;
+          top: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 20px;
+          height: 2px;
+          background: var(--gold);
+          border-radius: 2px;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--shadow-soft);
+          border-color: var(--gold);
+        }
+
+        .stat-icon {
+          font-size: 1.2rem;
+          margin-bottom: 8px;
+          color: var(--gold);
+          font-weight: 700;
+        }
+
+        .stat-number {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--gold);
+          margin-bottom: 4px;
+        }
+
+        .stat-label {
+          font-size: 0.9rem;
+          color: var(--text-light);
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        /* Tasks Section */
+        .tasks-section {
+          background: var(--white);
+          border: 1px solid var(--soft-pink);
+          border-radius: 20px;
+          padding: 30px;
+          box-shadow: var(--shadow-soft);
+          position: relative;
+        }
+
+        .tasks-section::before {
+          content: "";
+          position: absolute;
+          top: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 30px;
+          height: 2px;
+          background: var(--gold);
+          border-radius: 2px;
+        }
+
+        .task-input-container {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .task-input {
+          flex: 1;
+          padding: 10px 16px;
+          border: 1px solid var(--soft-pink);
+          border-radius: 15px;
+          font-size: 0.95rem;
+          font-family: inherit;
+          outline: none;
+          transition: all 0.3s ease;
+          background: var(--white);
+          color: var(--text-dark);
+        }
+
+        .task-input::placeholder {
+          color: var(--text-light);
+        }
+
+        .task-input:focus {
+          border-color: var(--gold);
+          box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        }
+
+        .add-btn {
+          min-width: 70px;
+          padding: 10px 16px;
+        }
+
+        .task-list {
+          max-height: 250px;
+          overflow-y: auto;
+        }
+
+        .task-list::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        .task-list::-webkit-scrollbar-track {
+          background: var(--soft-pink);
+          border-radius: 10px;
+        }
+
+        .task-list::-webkit-scrollbar-thumb {
+          background: var(--gold);
+          border-radius: 10px;
+        }
+
+        .task-item {
+          background: var(--white);
+          border: 1px solid var(--soft-pink);
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+
+        .task-item::before {
+          content: "▸";
+          position: absolute;
+          left: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--gold);
+          font-size: 0.8rem;
+        }
+
+        .task-item:hover {
+          transform: translateX(4px);
+          box-shadow: var(--shadow-soft);
+          border-color: var(--gold);
+        }
+
+        .task-item.completed {
+          opacity: 0.7;
+          text-decoration: line-through;
+        }
+
+        .task-item.completed::before {
+          content: "✓";
+          color: var(--primary-pink);
+        }
+
+        .task-text {
+          flex: 1;
+          font-weight: 500;
+          color: var(--text-dark);
+          font-size: 0.95rem;
+          margin-left: 20px;
+        }
+
+        .task-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .task-btn {
+          width: 28px;
+          height: 28px;
+          border: 1px solid var(--gold);
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+          background: var(--white);
+          color: var(--text-dark);
+        }
+
+        .task-btn:hover {
+          transform: scale(1.1);
+          background: var(--gold);
+          color: var(--white);
+        }
+
+        .complete-btn {
+          border-color: var(--primary-pink);
+        }
+
+        .complete-btn:hover {
+          background: var(--primary-pink);
+        }
+
+        .delete-btn {
+          border-color: var(--warm-brown);
+        }
+
+        .delete-btn:hover {
+          background: var(--warm-brown);
+        }
+
+        /* Footer */
+        .footer {
+          margin-top: 40px;
+          text-align: center;
+        }
+
+        .made-by {
+          font-size: 0.95rem;
+          color: var(--text-light);
+          font-weight: 500;
+        }
+
+        .creator {
+          color: var(--gold);
+          font-weight: 700;
+          font-size: 1.1em;
+        }
+
+        /* Notification */
+        .notification {
+          position: fixed;
+          top: 30px;
+          right: 30px;
+          background: var(--white);
+          border: 1px solid var(--gold);
+          color: var(--text-dark);
+          padding: 12px 20px;
+          border-radius: 12px;
+          box-shadow: var(--shadow-soft);
+          transform: translateX(400px);
+          transition: transform 0.4s ease;
+          z-index: 1000;
+          font-weight: 500;
+          max-width: 280px;
+          font-size: 0.9rem;
+        }
+
+        .notification.show {
+          transform: translateX(0);
+        }
+
+        /* Popup Modal */
+        .popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2000;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .popup-overlay.show {
+          opacity: 1;
+          visibility: visible;
+        }
+
+        .popup {
+          background: var(--white);
+          border: 2px solid var(--gold);
+          border-radius: 20px;
+          padding: 30px;
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+          box-shadow: var(--shadow-hover);
+          transform: scale(0.8);
+          transition: transform 0.3s ease;
+        }
+
+        .popup-overlay.show .popup {
+          transform: scale(1);
+        }
+
+        .popup h3 {
+          color: var(--gold);
+          font-size: 1.5rem;
+          margin-bottom: 15px;
+          font-weight: 700;
+        }
+
+        .popup p {
+          color: var(--text-dark);
+          font-size: 1rem;
+          line-height: 1.6;
+          margin-bottom: 20px;
+        }
+
+        .popup-close {
+          background: var(--gold);
+          color: var(--white);
+          border: none;
+          padding: 8px 16px;
+          border-radius: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.9rem;
+        }
+
+        .popup-close:hover {
+          background: var(--warm-brown);
+          transform: translateY(-1px);
+        }
+
+        /* Theme variations */
+        body.theme-brown {
+          --primary-pink: #bcaaa4;
+          --soft-pink: #efebe9;
+          --warm-brown: #5d4037;
+          --gold: #8d6e63;
+        }
+
+        body.theme-gold {
+          --primary-pink: #f4e4a6;
+          --soft-pink: #fffde7;
+          --warm-brown: #bf9000;
+          --gold: #d4af37;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+          .container {
+            padding: 20px 15px;
+          }
+
+          .main-grid {
+            grid-template-columns: 1fr;
+            gap: 30px;
+          }
+
+          .timer-circle {
+            width: 240px;
+            height: 240px;
+          }
+
+          .time {
+            font-size: 2.8rem;
+          }
+
+          .controls {
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .btn {
+            width: 100%;
+            max-width: 180px;
+          }
+
+          .theme-selector {
+            position: relative;
+            top: auto;
+            left: auto;
+            justify-content: center;
+            margin-bottom: 20px;
+          }
+
+          .notification {
+            top: 20px;
+            right: 15px;
+            left: 15px;
+            transform: translateY(-100px);
+            max-width: none;
+          }
+
+          .notification.show {
+            transform: translateY(0);
+          }
+
+          .task-input-container {
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .corner-decoration {
+            width: 30px;
+            height: 30px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .timer-circle {
+            width: 200px;
+            height: 200px;
+          }
+
+          .time {
+            font-size: 2.5rem;
+          }
+
+          .title {
+            font-size: 1.8rem;
+          }
+
+          .tasks-section {
+            padding: 20px;
+          }
+        }
+    </style>
+</head>
+<body>
+    <!-- Gold Corner Decorations -->
+    <div class="corner-decoration corner-top-left"></div>
+    <div class="corner-decoration corner-top-right"></div>
+    <div class="corner-decoration corner-bottom-left"></div>
+    <div class="corner-decoration corner-bottom-right"></div>
+
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <button class="theme-btn active" onclick="setTheme('default')" data-theme="pink" title="Soft Pink"></button>
+        <button class="theme-btn" onclick="setTheme('brown')" data-theme="brown" title="Warm Brown"></button>
+        <button class="theme-btn" onclick="setTheme('gold')" data-theme="gold" title="Elegant Gold"></button>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">Pomodoro Timer</h1>
+            <p class="subtitle">Stay focused and productive</p>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Timer Section -->
+            <div class="timer-section">
+                <div class="timer-circle" id="timerCircle">
+                    <svg class="timer-svg" viewBox="0 0 280 280">
+                        <circle class="timer-bg" cx="140" cy="140" r="125"></circle>
+                        <circle class="timer-progress" cx="140" cy="140" r="125" id="timerProgress"></circle>
+                    </svg>
+                    <div class="timer-content">
+                        <div class="time" id="timeDisplay">25:00</div>
+                        <div class="session-info" id="sessionInfo">Work Session</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn" id="startBtn">Start</button>
+                    <button class="btn" id="pauseBtn">Pause</button>
+                    <button class="btn" id="resetBtn">Reset</button>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <h3 class="section-title">Your Progress</h3>
+                <div class="stats">
+                    <div class="stat-card" onclick="showPopup('sessions')">
+                        <div class="stat-icon">SESSIONS</div>
+                        <div class="stat-number" id="completedSessions">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card" onclick="showPopup('tasks')">
+                        <div class="stat-icon">TASKS</div>
+                        <div class="stat-number" id="completedTasks">0</div>
+                        <div class="stat-label">Finished</div>
+                    </div>
+                    <div class="stat-card" onclick="showPopup('cycle')">
+                        <div class="stat-icon">CYCLE</div>
+                        <div class="stat-number" id="currentCycle">1</div>
+                        <div class="stat-label">Current</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Section -->
+        <div class="tasks-section">
+            <h3 class="section-title">Today's Tasks</h3>
+            <div class="task-input-container">
+                <input type="text" class="task-input" id="taskInput" placeholder="Add a new task...">
+                <button class="btn add-btn" id="addTaskBtn">Add</button>
+            </div>
+            <div class="task-list" id="taskList"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p class="made-by">Made with love by <span class="creator">Lina Yassire</span></p>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Popup Modal -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup">
+            <h3 id="popupTitle">Statistics</h3>
+            <p id="popupContent">Your productivity details will appear here.</p>
+            <button class="popup-close" onclick="closePopup()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        class PomodoroTimer {
+          constructor() {
+            this.workTime = 25 * 60
+            this.shortBreak = 5 * 60
+            this.longBreak = 15 * 60
+            this.currentTime = this.workTime
+            this.isRunning = false
+            this.isWorkSession = true
+            this.cycle = 1
+            this.completedSessions = 0
+            this.completedTasks = 0
+            this.tasks = []
+            this.timer = null
+
+            this.initializeElements()
+            this.bindEvents()
+            this.loadData()
+            this.updateDisplay()
+            this.loadTheme()
+          }
+
+          initializeElements() {
+            this.timeDisplay = document.getElementById("timeDisplay")
+            this.sessionInfo = document.getElementById("sessionInfo")
+            this.startBtn = document.getElementById("startBtn")
+            this.pauseBtn = document.getElementById("pauseBtn")
+            this.resetBtn = document.getElementById("resetBtn")
+            this.completedSessionsEl = document.getElementById("completedSessions")
+            this.completedTasksEl = document.getElementById("completedTasks")
+            this.currentCycleEl = document.getElementById("currentCycle")
+            this.taskInput = document.getElementById("taskInput")
+            this.addTaskBtn = document.getElementById("addTaskBtn")
+            this.taskList = document.getElementById("taskList")
+            this.notification = document.getElementById("notification")
+            this.timerCircle = document.getElementById("timerCircle")
+            this.timerProgress = document.getElementById("timerProgress")
+          }
+
+          bindEvents() {
+            this.startBtn.addEventListener("click", () => this.start())
+            this.pauseBtn.addEventListener("click", () => this.pause())
+            this.resetBtn.addEventListener("click", () => this.reset())
+            this.addTaskBtn.addEventListener("click", () => this.addTask())
+            this.taskInput.addEventListener("keypress", (e) => {
+              if (e.key === "Enter") this.addTask()
+            })
+          }
+
+          start() {
+            if (!this.isRunning) {
+              this.isRunning = true
+              this.startBtn.textContent = "Pause"
+              this.startBtn.classList.add("active")
+              this.timerCircle.classList.add("active")
+              this.timer = setInterval(() => this.tick(), 1000)
+            } else {
+              this.pause()
+            }
+          }
+
+          pause() {
+            this.isRunning = false
+            this.startBtn.textContent = "Start"
+            this.startBtn.classList.remove("active")
+            this.timerCircle.classList.remove("active")
+            clearInterval(this.timer)
+          }
+
+          reset() {
+            this.pause()
+            this.currentTime = this.isWorkSession ? this.workTime : this.cycle % 4 === 0 ? this.longBreak : this.shortBreak
+            this.updateDisplay()
+          }
+
+          tick() {
+            this.currentTime--
+            this.updateDisplay()
+
+            if (this.currentTime <= 0) {
+              this.sessionComplete()
+            }
+          }
+
+          sessionComplete() {
+            this.pause()
+            this.playNotificationSound()
+
+            if (this.isWorkSession) {
+              this.completedSessions++
+              this.showNotification("Work session complete! Time for a break.")
+              this.isWorkSession = false
+              this.currentTime = this.cycle % 4 === 0 ? this.longBreak : this.shortBreak
+            } else {
+              this.showNotification("Break time over! Ready to focus?")
+              this.isWorkSession = true
+              this.currentTime = this.workTime
+              this.cycle++
+            }
+
+            this.updateDisplay()
+            this.updateTimerMode()
+            this.saveData()
+          }
+
+          updateTimerMode() {
+            this.timerCircle.className = "timer-circle"
+            if (!this.isWorkSession) {
+              this.timerCircle.classList.add("break-mode")
+            }
+          }
+
+          updateDisplay() {
+            const minutes = Math.floor(this.currentTime / 60)
+            const seconds = this.currentTime % 60
+            this.timeDisplay.textContent = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+
+            const sessionType = this.isWorkSession ? "Work Session" : this.cycle % 4 === 0 ? "Long Break" : "Short Break"
+            this.sessionInfo.textContent = sessionType
+
+            this.completedSessionsEl.textContent = this.completedSessions
+            this.completedTasksEl.textContent = this.completedTasks
+            this.currentCycleEl.textContent = this.cycle
+
+            // Update circular progress
+            const totalTime = this.isWorkSession ? this.workTime : this.cycle % 4 === 0 ? this.longBreak : this.shortBreak
+            const progress = (totalTime - this.currentTime) / totalTime
+            const circumference = 2 * Math.PI * 125
+            const offset = circumference - progress * circumference
+            this.timerProgress.style.strokeDashoffset = offset
+          }
+
+          addTask() {
+            const taskText = this.taskInput.value.trim()
+            if (taskText) {
+              const task = {
+                id: Date.now(),
+                text: taskText,
+                completed: false,
+                createdAt: new Date().toISOString(),
+              }
+              this.tasks.push(task)
+              this.taskInput.value = ""
+              this.renderTasks()
+              this.saveData()
+            }
+          }
+
+          toggleTask(id) {
+            const task = this.tasks.find((t) => t.id === id)
+            if (task) {
+              task.completed = !task.completed
+              if (task.completed) {
+                this.completedTasks++
+                this.showNotification("Task completed! Great job!")
+                task.completedAt = new Date().toISOString()
+              } else {
+                this.completedTasks--
+                task.completedAt = null
+              }
+              this.renderTasks()
+              this.updateDisplay()
+              this.saveData()
+            }
+          }
+
+          deleteTask(id) {
+            const taskIndex = this.tasks.findIndex((t) => t.id === id)
+            if (taskIndex > -1) {
+              if (this.tasks[taskIndex].completed) {
+                this.completedTasks--
+              }
+              this.tasks.splice(taskIndex, 1)
+              this.renderTasks()
+              this.updateDisplay()
+              this.saveData()
+            }
+          }
+
+          renderTasks() {
+            this.taskList.innerHTML = ""
+            this.tasks.forEach((task) => {
+              const taskEl = document.createElement("div")
+              taskEl.className = `task-item ${task.completed ? "completed" : ""}`
+              taskEl.innerHTML = `
+                <span class="task-text">${task.text}</span>
+                <div class="task-actions">
+                  <button class="task-btn complete-btn" onclick="pomodoro.toggleTask(${task.id})" title="${task.completed ? "Mark as incomplete" : "Mark as complete"}">
+                    ${task.completed ? "↶" : "✓"}
+                  </button>
+                  <button class="task-btn delete-btn" onclick="pomodoro.deleteTask(${task.id})" title="Delete task">
+                    ×
+                  </button>
+                </div>
+              `
+              this.taskList.appendChild(taskEl)
+            })
+          }
+
+          showNotification(message) {
+            this.notification.textContent = message
+            this.notification.classList.add("show")
+            setTimeout(() => {
+              this.notification.classList.remove("show")
+            }, 4000)
+          }
+
+          playNotificationSound() {
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+              const oscillator = audioContext.createOscillator()
+              const gainNode = audioContext.createGain()
+
+              oscillator.connect(gainNode)
+              gainNode.connect(audioContext.destination)
+
+              oscillator.frequency.value = 800
+              oscillator.type = "sine"
+
+              gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6)
+
+              oscillator.start(audioContext.currentTime)
+              oscillator.stop(audioContext.currentTime + 0.6)
+            } catch (error) {
+              console.log("Audio not supported")
+            }
+          }
+
+          saveData() {
+            const data = {
+              completedSessions: this.completedSessions,
+              completedTasks: this.completedTasks,
+              cycle: this.cycle,
+              tasks: this.tasks,
+              lastSaved: new Date().toISOString(),
+            }
+            localStorage.setItem("pomodoroData", JSON.stringify(data))
+          }
+
+          loadData() {
+            const data = localStorage.getItem("pomodoroData")
+            if (data) {
+              const parsed = JSON.parse(data)
+              this.completedSessions = parsed.completedSessions || 0
+              this.completedTasks = parsed.completedTasks || 0
+              this.cycle = parsed.cycle || 1
+              this.tasks = parsed.tasks || []
+              this.renderTasks()
+            }
+          }
+
+          loadTheme() {
+            const savedTheme = localStorage.getItem("pomodoroTheme")
+            if (savedTheme) {
+              setTheme(savedTheme)
+            }
+          }
+        }
+
+        function setTheme(themeName) {
+          document.querySelectorAll(".theme-btn").forEach((btn) => btn.classList.remove("active"))
+          const selectedBtn =
+            document.querySelector(`[data-theme="${themeName}"]`) || document.querySelector('[data-theme="pink"]')
+          selectedBtn.classList.add("active")
+          document.body.className = themeName === "default" ? "" : `theme-${themeName}`
+          localStorage.setItem("pomodoroTheme", themeName)
+        }
+
+        function showPopup(type) {
+          const popup = document.getElementById("popupOverlay")
+          const title = document.getElementById("popupTitle")
+          const content = document.getElementById("popupContent")
+
+          switch (type) {
+            case "sessions":
+              title.textContent = "Completed Sessions"
+              content.textContent = `You have completed ${pomodoro.completedSessions} productive work sessions. Each session represents 25 minutes of focused work. Keep up the excellent progress!`
+              break
+            case "tasks":
+              title.textContent = "Tasks Completed"
+              content.textContent = `You have successfully completed ${pomodoro.completedTasks} tasks. Every completed task brings you closer to your goals. You're doing amazing!`
+              break
+            case "cycle":
+              title.textContent = "Current Cycle"
+              content.textContent = `You are currently on cycle ${pomodoro.cycle}. After every 4 work sessions, you earn a longer 15-minute break. Stay focused and maintain your momentum!`
+              break
+          }
+
+          popup.classList.add("show")
+        }
+
+        function closePopup() {
+          document.getElementById("popupOverlay").classList.remove("show")
+        }
+
+        document.getElementById("popupOverlay").addEventListener("click", function (e) {
+          if (e.target === this) {
+            closePopup()
+          }
+        })
+
+        const pomodoro = new PomodoroTimer()
+    </script>
+</body>
+</html>
